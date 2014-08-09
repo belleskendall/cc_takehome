@@ -1,0 +1,96 @@
+<!DOCTYPE HTML>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css" href="takehome.css">
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+<script language="javascript">
+/*jslint browser: true*/
+/*global $, jQuery, alert*/
+function check_currency(value) {
+	"use strict";
+	var regex = /(^[1-9]\d*((\.\d{0,2})?)$)|(^(0?\.)(\d{1,2}))/;
+	if (regex.test(value)) {
+		return true;
+	} else {
+		return false;
+	}
+}
+function calculate_payment() {
+	"use strict";
+	if ($('#principle').val() == $('#payment').val()) {
+		document.getElementById('mySecondDiv').innerHTML = "<table><tr><th colspan='2'>Payment Information</th></tr>" +
+			"<tr><td>Initial Loan:</td><td>$" + parseFloat($('#principle').val()).toFixed(2) + "</td></tr>" +
+			"<tr><td>First Payment:</td><td>$" + parseFloat($('#payment').val()).toFixed(2) + "</td></tr>" +
+			"<tr><td>Intrest Paid:</td><td>$0.00</td></tr><tr><td>" +
+			"Loan Remaining:</td><td>$0.00</td></tr></table>";
+	} else {
+		var interest = Math.ceil(document.getElementById('apr').innerHTML / 100 / 365 * ($('#principle').val() * 100) * 30) / 100;
+		var update_principle = parseFloat($('#principle').val()) - parseFloat($('#payment').val()) + interest;
+		document.getElementById('mySecondDiv').innerHTML = "<table><tr><th colspan='2'>Payment Information</th></tr>" +
+			"<tr><td>Initial Loan:</td><td>$" + parseFloat($('#principle').val()).toFixed(2) + "</td></tr>" +
+			"<tr><td>First Payment:</td><td>$" + parseFloat($('#payment').val()).toFixed(2) + "</td></tr>" +
+			"<tr><td>Intrest Paid:</td><td>$" + interest.toFixed(2) + "</td></tr><tr><td>Loan Remaining:</td><td>$" +
+			update_principle.toFixed(2) + "</td></tr></table>";
+	}
+}
+function submitMe() {
+	"use strict";
+	var variableString = 'id=' + $("#id").val();
+	jQuery.ajax({
+		type: "GET",
+		url: "cards.php",
+		data: variableString,
+		success: function (msg) {
+			var message = JSON.parse(msg);
+			//if php detected wrong card format
+			if (message['error'] === "type") {
+				document.getElementById('myDiv').innerHTML = "Invalid card number format";
+				document.getElementById('mySecondDiv').innerHTML = "";
+			//if correct card number format but card not found
+			} else if (message.name === undefined) {
+				document.getElementById('myDiv').innerHTML = "Your card was not found";
+				document.getElementById('mySecondDiv').innerHTML = "";
+			//if card found
+			} else {
+				document.getElementById('myDiv').innerHTML = "<table>" +
+					"<th colspan='2'>Card Information</th><tr><td>Name:</td><td>" +
+					message.name + "</td></tr>" + "<tr><td>Card Number:</td><td>" +
+					message.id + "</td></tr>" + "<tr><td>Issued By:</td><td>" +
+					message.issuer + "</td></tr>" + "<tr><td>APR:</td><td id='apr'>" +
+					message.apr + "</td></tr></table>";
+				if (check_currency($('#principle').val()) && check_currency($('#payment').val()) &&
+						parseFloat($('#principle').val()) >= parseFloat($('#payment').val())) {
+					calculate_payment();
+				} else if (!check_currency($('#principle').val()) && !check_currency($('#payment').val())) {
+					document.getElementById('mySecondDiv').innerHTML = "Invalid loan amount<br/>Invalid payment amount";
+				} else if (!check_currency($('#principle').val()) && check_currency($('#payment').val())) {
+					document.getElementById('mySecondDiv').innerHTML = "Invalid loan amount";
+				} else if (check_currency($('#principle').val()) && !check_currency($('#payment').val())) {
+					document.getElementById('mySecondDiv').innerHTML = "Invalid payment amount";
+				} else {
+					document.getElementById('mySecondDiv').innerHTML = "Payment cannot be more than the loan";
+				}
+			}
+		}
+	});
+}
+</script>
+</head>
+<body>
+	<form action="index2.php" method="get">
+		<label for="id">Card Number: </label>
+		<input type="text" name="id" id="id" autocomplete="off" placeholder="xxxxxxxxxxxxxxxx">
+		<br/>
+		<label for="principle">Amount to borrow: </label>
+		<input type="text" name="principle" id="principle">
+		<br/>
+		<label for="payment">Monthly payment: </label>
+		<input type="text" name="payment" id="payment">
+		<br/>
+		<input type="button" value="submit" onClick="submitMe();"/>
+	</form>
+	<div id="myDiv"></div>
+	<div id="mySecondDiv"><div>
+</body>
+</html>
