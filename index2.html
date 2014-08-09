@@ -1,0 +1,72 @@
+<!DOCTYPE HTML>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css" href="takehome.css">
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+<script language="javascript">
+/*jslint browser: true*/
+/*global $, jQuery, alert*/
+$(document).ready(function () {
+	"use strict";
+	var variableString = "ready=set";
+	jQuery.ajax({
+		type: "GET",
+		url: "issuers.php",
+		data: variableString,
+		success: function (msg) {
+			var message = JSON.parse(msg);
+			var len = message.length;
+			var i, k;
+			for (i = 0, k = ""; i < len; i += 1) {
+				k += "<option value='" + message[i].issuer + "'>" + message[i].issuer + "</option>";
+			}
+			document.getElementById('issuers').innerHTML = k;
+		}
+	});
+});
+function submitMe() {
+	"use strict";
+	var variableString = "issuer=" + document.getElementById('issuers').value;
+	jQuery.ajax({
+		type: "GET",
+		url: "customers.php",
+		data: variableString,
+		success: function (msg) {
+			var message = JSON.parse(msg);
+			var len = message.length;
+			var k = "<h2>Customer List for " + document.getElementById('issuers').value + "</h2>" +
+               "<table><tr><th>Name</th><th>Card Number</th><th>APR</th></tr>";
+			for (var x in message) {
+				//if multiple rows found
+				if (message.hasOwnProperty(x) && $.isNumeric(x)) {
+					k += "<tr><td>" + message[x]['name'] + "</td><td>" + message[x]['id'] + "</td><td>" + message[x]['apr'] + "</td></tr>";
+				//if one row found
+				} else if (message.hasOwnProperty(x)) {
+					if (x === 'name') {
+						k += "<tr><td>" + message[x] + "</td>";
+					} else if (x === 'id') {
+						k += "<td>" + message[x] + "</td>";
+					} else {
+						k += "<td>" + message[x] + "</td></tr>";
+					}
+				}
+			}
+			k += "</table>";
+			document.getElementById('myDiv').innerHTML = k;
+		}
+	});
+}
+</script>
+</head>
+<body>
+	<form action="index2.php" method="get">
+		<label for="issuers">Card Issuer: </label>
+		<select name="issuers" id="issuers"></select>
+		<br/>
+		<input type="button" value="submit" onClick="submitMe();"/>
+	</form>
+	<div id="myDiv"></div>
+	
+</body>
+</html>
